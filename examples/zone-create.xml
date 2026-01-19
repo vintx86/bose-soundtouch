@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Example: Create a multiroom zone -->
+<zone master="device1">
+  <member role="MASTER" ipaddress="192.168.1.100"/>
+  <member role="SLAVE" ipaddress="192.168.1.101"/>
+</zone>

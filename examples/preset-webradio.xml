@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Example: Select a web radio preset -->
+<ContentItem source="INTERNET_RADIO" type="station" location="http://stream.example.com/radio" sourceAccount="" isPresetable="true">
+  <itemName>My Favorite Radio</itemName>
+  <containerArt>http://example.com/art.jpg</containerArt>
+</ContentItem>

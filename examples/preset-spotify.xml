@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Example: Select a Spotify preset -->
+<ContentItem source="SPOTIFY" type="playlist" location="spotify:playlist:37i9dQZF1DXcBWIGoYBM5M" sourceAccount="spotify_user" isPresetable="true">
+  <itemName>Today's Top Hits</itemName>
+  <containerArt>https://i.scdn.co/image/ab67706f00000002724554ed6bed6f051d9b0bfc</containerArt>
+</ContentItem>
