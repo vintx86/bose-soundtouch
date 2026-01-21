@@ -380,7 +380,8 @@ document.getElementById('preset-form').addEventListener('submit', async (e) => {
     
     if (source === 'INTERNET_RADIO') {
         const stationId = document.getElementById('preset-station-id').value;
-        xml = `<ContentItem source="INTERNET_RADIO" type="station" stationId="${stationId}">
+        // Include both stationId and location for TuneIn stations
+        xml = `<ContentItem source="INTERNET_RADIO" type="station" stationId="${stationId}" location="/v1/playback/station/${stationId}">
             <itemName>${name}</itemName>
             <stationName>${name}</stationName>
             ${art ? `<containerArt>${art}</containerArt>` : ''}

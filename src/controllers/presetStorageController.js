@@ -9,10 +9,11 @@ export class PresetStorageController {
   async storePreset(req, res) {
     try {
       const xml = await parseStringPromise(req.body);
-      const device = this.deviceManager.getDevice(req.query.deviceId);
+      const deviceId = req.query.deviceId;
+      const accountId = req.headers['x-account-id'] || req.query.accountId || 'default';
       
-      if (!device) {
-        return res.status(404).send('<error>Device not found</error>');
+      if (!deviceId) {
+        return res.status(400).send('<error>Device ID required</error>');
       }
 
       const contentItem = xml.ContentItem;
@@ -22,48 +23,87 @@ export class PresetStorageController {
         return res.status(400).send('<error>Preset ID must be between 1 and 6</error>');
       }
 
-      const preset = {
+      console.log(`Storing preset ${presetId} for device ${deviceId}`);
+      console.log('ContentItem:', JSON.stringify(contentItem, null, 2));
+
+      // Load existing presets from storage
+      let existingPresets = [];
+      const presetsXml = this.storage.loadPresets(accountId, deviceId);
+      if (presetsXml) {
+        try {
+          const parsed = await parseStringPromise(presetsXml);
+          if (parsed.presets?.preset) {
+            const presetArray = Array.isArray(parsed.presets.preset) 
+              ? parsed.presets.preset 
+              : [parsed.presets.preset];
+            
+            existingPresets = presetArray.map(p => ({
+              id: p.$?.id,
+              name: p.ContentItem?.itemName?.[0] || 'Unnamed',
+              source: p.ContentItem?.$?.source || 'INTERNET_RADIO',
+              type: p.ContentItem?.$?.type || 'station',
+              location: p.ContentItem?.$?.location || '',
+              stationId: p.ContentItem?.$?.stationId || '',
+              art: p.ContentItem?.containerArt?.[0] || '',
+              sourceAccount: p.ContentItem?.$?.sourceAccount || '',
+              createdOn: p.$?.createdOn || Date.now(),
+              updatedOn: p.$?.updatedOn || Date.now()
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing existing presets:', error);
+        }
+      }
+
+      console.log(`Loaded ${existingPresets.length} existing presets`);
+
+      // Create new preset object
+      const newPreset = {
         id: presetId,
         name: contentItem.itemName?.[0] || 'Unnamed Station',
         source: contentItem.$?.source || 'INTERNET_RADIO',
         type: contentItem.$?.type || 'station',
         location: contentItem.$?.location || '',
+        stationId: contentItem.$?.stationId || '',
         art: contentItem.containerArt?.[0] || '',
         sourceAccount: contentItem.$?.sourceAccount || '',
         createdOn: Date.now(),
         updatedOn: Date.now()
       };
 
-      // Get current presets
-      const presets = device.getPresets();
-      
       // Find and update or add new
-      const existingIndex = presets.findIndex(p => p.id === presetId);
+      const existingIndex = existingPresets.findIndex(p => p.id === presetId);
       if (existingIndex >= 0) {
-        presets[existingIndex] = preset;
-        console.log(`Updated preset ${presetId} for ${device.name}: ${preset.name}`);
+        // Preserve createdOn from existing preset
+        newPreset.createdOn = existingPresets[existingIndex].createdOn;
+        existingPresets[existingIndex] = newPreset;
+        console.log(`Updated preset ${presetId}: ${newPreset.name}`);
       } else {
-        presets.push(preset);
-        console.log(`Added preset ${presetId} for ${device.name}: ${preset.name}`);
+        existingPresets.push(newPreset);
+        console.log(`Added preset ${presetId}: ${newPreset.name}`);
       }
 
       // Sort by ID and keep only 6 presets
-      presets.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-      if (presets.length > 6) {
-        presets.splice(6);
+      existingPresets.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+      if (existingPresets.length > 6) {
+        existingPresets.splice(6);
       }
 
-      device.setPresets(presets);
-
       // Save to persistent storage
-      await this.savePresetsToStorage(device);
+      await this.savePresetsToStorage(deviceId, accountId, existingPresets);
 
-      // Emit update event
-      this.deviceManager.emit('update', {
-        type: 'presetsUpdated',
-        deviceId: device.id,
-        presets
-      });
+      // Update device manager if device exists
+      const device = this.deviceManager.getDevice(deviceId);
+      if (device) {
+        device.setPresets(existingPresets);
+        
+        // Emit update event
+        this.deviceManager.emit('update', {
+          type: 'presetsUpdated',
+          deviceId: device.id,
+          presets: existingPresets
+        });
+      }
 
       res.set('Content-Type', 'application/xml');
       res.send('<status>OK</status>');
@@ -74,56 +114,96 @@ export class PresetStorageController {
   }
 
   async removePreset(req, res) {
-    const device = this.deviceManager.getDevice(req.query.deviceId);
+    const deviceId = req.query.deviceId;
     const presetId = req.query.presetId;
+    const accountId = req.headers['x-account-id'] || req.query.accountId || 'default';
     
-    if (!device) {
-      return res.status(404).send('<error>Device not found</error>');
+    if (!deviceId) {
+      return res.status(400).send('<error>Device ID required</error>');
     }
 
     if (!presetId) {
       return res.status(400).send('<error>Preset ID required</error>');
     }
 
-    const presets = device.getPresets().filter(p => p.id !== presetId);
-    device.setPresets(presets);
+    // Load existing presets from storage
+    let existingPresets = [];
+    const presetsXml = this.storage.loadPresets(accountId, deviceId);
+    if (presetsXml) {
+      try {
+        const parsed = await parseStringPromise(presetsXml);
+        if (parsed.presets?.preset) {
+          const presetArray = Array.isArray(parsed.presets.preset) 
+            ? parsed.presets.preset 
+            : [parsed.presets.preset];
+          
+          existingPresets = presetArray.map(p => ({
+            id: p.$?.id,
+            name: p.ContentItem?.itemName?.[0] || 'Unnamed',
+            source: p.ContentItem?.$?.source || 'INTERNET_RADIO',
+            type: p.ContentItem?.$?.type || 'station',
+            location: p.ContentItem?.$?.location || '',
+            stationId: p.ContentItem?.$?.stationId || '',
+            art: p.ContentItem?.containerArt?.[0] || '',
+            sourceAccount: p.ContentItem?.$?.sourceAccount || '',
+            createdOn: p.$?.createdOn || Date.now(),
+            updatedOn: p.$?.updatedOn || Date.now()
+          }));
+        }
+      } catch (error) {
+        console.error('Error parsing existing presets:', error);
+      }
+    }
 
-    console.log(`Removed preset ${presetId} from ${device.name}`);
+    const presets = existingPresets.filter(p => p.id !== presetId);
+    
+    console.log(`Removed preset ${presetId} from device ${deviceId}`);
 
     // Save to persistent storage
-    await this.savePresetsToStorage(device);
+    await this.savePresetsToStorage(deviceId, accountId, presets);
 
-    // Emit update event
-    this.deviceManager.emit('update', {
-      type: 'presetsUpdated',
-      deviceId: device.id,
-      presets
-    });
+    // Update device manager if device exists
+    const device = this.deviceManager.getDevice(deviceId);
+    if (device) {
+      device.setPresets(presets);
+      
+      // Emit update event
+      this.deviceManager.emit('update', {
+        type: 'presetsUpdated',
+        deviceId: device.id,
+        presets
+      });
+    }
 
     res.set('Content-Type', 'application/xml');
     res.send('<status>OK</status>');
   }
 
   async removeAllPresets(req, res) {
-    const device = this.deviceManager.getDevice(req.query.deviceId);
+    const deviceId = req.query.deviceId;
+    const accountId = req.headers['x-account-id'] || req.query.accountId || 'default';
     
-    if (!device) {
-      return res.status(404).send('<error>Device not found</error>');
+    if (!deviceId) {
+      return res.status(400).send('<error>Device ID required</error>');
     }
 
-    device.setPresets([]);
-
-    console.log(`Removed all presets from ${device.name}`);
+    console.log(`Removed all presets from device ${deviceId}`);
 
     // Save to persistent storage
-    await this.savePresetsToStorage(device);
+    await this.savePresetsToStorage(deviceId, accountId, []);
 
-    // Emit update event
-    this.deviceManager.emit('update', {
-      type: 'presetsUpdated',
-      deviceId: device.id,
-      presets: []
-    });
+    // Update device manager if device exists
+    const device = this.deviceManager.getDevice(deviceId);
+    if (device) {
+      device.setPresets([]);
+      
+      // Emit update event
+      this.deviceManager.emit('update', {
+        type: 'presetsUpdated',
+        deviceId: device.id,
+        presets: []
+      });
+    }
 
     res.set('Content-Type', 'application/xml');
     res.send('<status>OK</status>');
@@ -132,14 +212,11 @@ export class PresetStorageController {
   /**
    * Convert in-memory presets to XML and save to persistent storage
    */
-  async savePresetsToStorage(device) {
+  async savePresetsToStorage(deviceId, accountId, presets) {
     if (!this.storage) {
       console.warn('Storage not available, skipping preset persistence');
       return;
     }
-
-    const accountId = device.accountId || 'default';
-    const presets = device.getPresets();
 
     // Convert presets to XML format expected by devices
     const builder = new Builder({ rootName: 'presets' });
@@ -155,6 +232,7 @@ export class PresetStorageController {
             source: p.source || 'INTERNET_RADIO',
             type: p.type || 'station',
             location: p.location || '',
+            stationId: p.stationId || undefined,
             sourceAccount: p.sourceAccount || '',
             isPresetable: 'true'
           },
@@ -165,7 +243,7 @@ export class PresetStorageController {
     };
 
     const xml = builder.buildObject(presetsData);
-    this.storage.savePresets(accountId, device.id, xml);
-    console.log(`Persisted ${presets.length} presets to storage for ${device.name}`);
+    this.storage.savePresets(accountId, deviceId, xml);
+    console.log(`Persisted ${presets.length} presets to storage for device ${deviceId}`);
   }
 }

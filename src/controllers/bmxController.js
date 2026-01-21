@@ -160,7 +160,7 @@ export class BMXController {
       
       const source = contentItem.$?.source;
       const location = contentItem.$?.location;
-      const stationId = contentItem.$?.stationId;
+      let stationId = contentItem.$?.stationId;
 
       console.log(`BMX resolve: source=${source}, location=${location}, stationId=${stationId}`);
 
@@ -172,53 +172,78 @@ export class BMXController {
         return;
       }
 
+      // Handle TUNEIN source (legacy format from Bose cloud)
+      // Extract station ID from location path like "/v1/playback/station/s47530"
+      if (source === 'TUNEIN' || source === 'INTERNET_RADIO') {
+        if (!stationId && location) {
+          // Extract station ID from location path
+          const stationMatch = location.match(/\/station\/(s\d+)/);
+          if (stationMatch) {
+            stationId = stationMatch[1];
+            console.log(`Extracted station ID from location: ${stationId}`);
+          }
+        }
+
+        // If we have a station ID, resolve it to a stream URL
+        if (stationId && stationId.startsWith('s')) {
+          try {
+            console.log(`Resolving TuneIn station: ${stationId}`);
+            const tuneUrl = `${this.tuneinApiBase}/Tune.ashx`;
+            const params = {
+              id: stationId,
+              partnerId: this.tuneinPartnerId,
+              formats: 'mp3,aac,ogg,hls'
+            };
+
+            if (this.tuneinUsername) {
+              params.username = this.tuneinUsername;
+            }
+
+            const response = await axios.get(tuneUrl, { params });
+            const streamUrl = this.extractStreamUrl(response.data);
+
+            if (streamUrl) {
+              console.log(`Resolved stream URL: ${streamUrl}`);
+              // Return resolved stream URL
+              const builder = new Builder({ rootName: 'ContentItem' });
+              const data = {
+                $: {
+                  source: 'INTERNET_RADIO',
+                  type: 'station',
+                  location: streamUrl,
+                  stationId: stationId
+                },
+                itemName: contentItem.itemName?.[0] || 'TuneIn Station',
+                stationName: contentItem.stationName?.[0] || contentItem.itemName?.[0] || 'TuneIn Station',
+                containerArt: contentItem.containerArt?.[0] || ''
+              };
+
+              res.set('Content-Type', 'application/xml');
+              res.send(builder.buildObject(data));
+              return;
+            } else {
+              console.error('Failed to extract stream URL from TuneIn response');
+            }
+          } catch (error) {
+            console.error('TuneIn resolution error:', error.message);
+          }
+        }
+
+        // If location is already a direct stream URL, pass through
+        if (location && (location.startsWith('http://') || location.startsWith('https://'))) {
+          console.log('Direct stream URL - passing through');
+          res.set('Content-Type', 'application/xml');
+          res.send(req.body);
+          return;
+        }
+      }
+
       // Handle other non-internet-radio sources - pass through
-      if (source && source !== 'INTERNET_RADIO') {
+      if (source && source !== 'INTERNET_RADIO' && source !== 'TUNEIN') {
         console.log(`${source} preset - passing through`);
         res.set('Content-Type', 'application/xml');
         res.send(req.body);
         return;
-      }
-
-      // Handle TuneIn station ID resolution
-      if (source === 'INTERNET_RADIO' && stationId && stationId.startsWith('s')) {
-        try {
-          const tuneUrl = `${this.tuneinApiBase}/Tune.ashx`;
-          const params = {
-            id: stationId,
-            partnerId: this.tuneinPartnerId,
-            formats: 'mp3,aac,ogg,hls'
-          };
-
-          if (this.tuneinUsername) {
-            params.username = this.tuneinUsername;
-          }
-
-          const response = await axios.get(tuneUrl, { params });
-          const streamUrl = this.extractStreamUrl(response.data);
-
-          if (streamUrl) {
-            // Return resolved stream URL
-            const builder = new Builder({ rootName: 'ContentItem' });
-            const data = {
-              $: {
-                source: 'INTERNET_RADIO',
-                type: 'station',
-                location: streamUrl,
-                stationId: stationId
-              },
-              itemName: contentItem.itemName?.[0] || 'TuneIn Station',
-              stationName: contentItem.stationName?.[0] || contentItem.itemName?.[0] || 'TuneIn Station',
-              containerArt: contentItem.containerArt?.[0] || ''
-            };
-
-            res.set('Content-Type', 'application/xml');
-            res.send(builder.buildObject(data));
-            return;
-          }
-        } catch (error) {
-          console.error('TuneIn resolution error:', error.message);
-        }
       }
 
       // Handle direct stream URLs - pass through
@@ -229,6 +254,7 @@ export class BMXController {
         return;
       }
 
+      console.error('Unable to resolve stream - no valid source or location');
       res.status(400).send('<error>Unable to resolve stream</error>');
     } catch (error) {
       console.error('BMX resolve error:', error);
@@ -241,18 +267,36 @@ export class BMXController {
    */
   extractStreamUrl(opmlData) {
     try {
-      // TuneIn returns OPML with stream URLs in <outline> elements
-      // Look for URL attribute in outline elements
-      const urlMatch = opmlData.match(/url="([^"]+)"/);
-      if (urlMatch && urlMatch[1]) {
-        return urlMatch[1];
-      }
+      // TuneIn can return different formats:
+      // 1. Plain text URLs (one per line)
+      // 2. OPML XML with <outline> elements
+      
+      // Check if response is plain text URLs
+      if (typeof opmlData === 'string') {
+        // Split by newlines and find first valid URL
+        const lines = opmlData.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        for (const line of lines) {
+          if (line.startsWith('http://') || line.startsWith('https://')) {
+            console.log(`Extracted stream URL from plain text: ${line}`);
+            return line;
+          }
+        }
+        
+        // Try OPML XML format
+        // Look for URL attribute in outline elements
+        const urlMatch = opmlData.match(/url="([^"]+)"/);
+        if (urlMatch && urlMatch[1]) {
+          console.log(`Extracted stream URL from OPML: ${urlMatch[1]}`);
+          return urlMatch[1];
+        }
 
-      // Alternative: look for guide_id which can be used to get stream
-      const guideMatch = opmlData.match(/guide_id="([^"]+)"/);
-      if (guideMatch && guideMatch[1]) {
-        // This is a guide ID, need another request to get actual stream
-        return null;
+        // Alternative: look for guide_id which can be used to get stream
+        const guideMatch = opmlData.match(/guide_id="([^"]+)"/);
+        if (guideMatch && guideMatch[1]) {
+          console.log(`Found guide_id, need another request: ${guideMatch[1]}`);
+          // This is a guide ID, need another request to get actual stream
+          return null;
+        }
       }
 
       return null;
