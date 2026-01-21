@@ -9,9 +9,10 @@ This server acts as a replacement for Bose's cloud infrastructure (marge.bose.co
 **Status: Production Ready** - Fully implements the cloud replacement functionality needed after May 6, 2026.
 
 ## Core Features (Requested)
-- ✅ **Web Radio Configuration on Presets** - Full support for internet radio stations
+- ✅ **Web Radio Configuration on Presets** - Full support for internet radio stations with TuneIn integration
 - ✅ **Spotify Integration** - Play Spotify playlists, albums, tracks, and artists
 - ✅ **Multiroom (Zones)** - Create and manage synchronized playback across multiple speakers
+- ✅ **TuneIn/BMX Integration** - Search, browse, and play TuneIn radio stations
 
 ### Complete API Implementation
 - ✅ Device information and management
@@ -132,6 +133,16 @@ Devices call these when configured to use your server:
 - `GET/POST /device/:id/sources` - Source configuration
 - `GET /account/:id/devices` - List devices per account
 
+### BMX/TuneIn Endpoints (Internet Radio)
+TuneIn integration for web radio presets:
+
+- `GET /tunein/search?query=...` - Search TuneIn stations
+- `GET /tunein/station/:stationId` - Get station details and stream URL
+- `GET /tunein/browse?c=...` - Browse TuneIn categories
+- `POST /bmx/resolve` - Resolve preset to stream URL (called by device)
+- `GET /bmx/presets/:deviceId` - Get TuneIn presets for device
+- `POST /bmx/auth` - Authenticate with TuneIn (optional)
+
 ### Control Endpoints (Optional - For Automation)
 You can also control devices directly via API:
 
@@ -143,7 +154,34 @@ You can also control devices directly via API:
 - `POST /key?deviceId=x` - Send key press
 - `GET /getZone?deviceId=x`, `POST /setZone?deviceId=x` - Multiroom zones
 
-**Total: 40 endpoints** - See [API_REFERENCE.md](API_REFERENCE.md) for complete documentation.
+**Total: 46 endpoints** - See [API_REFERENCE.md](API_REFERENCE.md) for complete documentation.
+
+## TuneIn Configuration
+
+The server includes TuneIn integration for internet radio presets. When a device presses a preset button configured with a TuneIn station, the server resolves the stream URL automatically.
+
+### Optional TuneIn Authentication
+
+For premium TuneIn features, set environment variables:
+
+```bash
+export TUNEIN_USERNAME="your_username"
+export TUNEIN_PASSWORD="your_password"
+npm start
+```
+
+### How Preset Buttons Work
+
+1. Device presses preset button (e.g., Preset 1)
+2. Device queries: `GET /device/{deviceId}/presets?presetId=1`
+3. Server returns preset with TuneIn station ID
+4. Device calls: `POST /bmx/resolve` with station ID
+5. Server resolves to actual stream URL
+6. Device plays the stream
+
+See [WEBRADIO_PRESET_GUIDE.md](WEBRADIO_PRESET_GUIDE.md) for detailed configuration.
+
+For information on how different preset types (TuneIn, Spotify, Direct URLs) are handled, see [PRESET_TYPES_GUIDE.md](PRESET_TYPES_GUIDE.md).
 
 ## Use Cases
 
@@ -190,6 +228,7 @@ src/
 │   └── device.js                     # Device model
 ├── controllers/                      # API endpoint controllers
 │   ├── cloudReplacementController.js # Cloud replacement endpoints
+│   ├── bmxController.js              # TuneIn/BMX integration
 │   ├── presetController.js
 │   ├── presetStorageController.js
 │   ├── zoneController.js

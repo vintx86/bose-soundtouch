@@ -114,6 +114,18 @@ Devices call these when configured to use your server
 | `/device/:id/sources` | GET/POST | Sources sync |
 | `/account/:id/devices` | GET | List devices |
 
+### BMX/TuneIn API (6 endpoints) - ESSENTIAL FOR WEB RADIO
+TuneIn integration for internet radio presets
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/tunein/search` | GET | Search TuneIn stations |
+| `/tunein/station/:id` | GET | Get station details |
+| `/tunein/browse` | GET | Browse categories |
+| `/bmx/resolve` | POST | Resolve stream URL |
+| `/bmx/presets/:deviceId` | GET | Get TuneIn presets |
+| `/bmx/auth` | POST | TuneIn auth (optional) |
+
 ### Control API (31 endpoints) - OPTIONAL BONUS
 For automation and scripting (query with `?deviceId={id}`)
 
@@ -143,7 +155,43 @@ For automation and scripting (query with `?deviceId={id}`)
 | `/setGroup` | POST | Set group |
 | `/listMediaServers` | GET | Media servers |
 
-**Total: 40 endpoints (9 essential + 31 optional)**
+**Total: 46 endpoints (9 essential + 6 TuneIn + 31 optional)**
+
+## TuneIn Integration
+
+### Search TuneIn
+```bash
+curl http://localhost:8090/tunein/search?query=BBC
+```
+
+### Get Station Details
+```bash
+curl http://localhost:8090/tunein/station/s24939
+```
+
+### Store TuneIn Preset
+```bash
+curl -X POST http://localhost:8090/storePreset?deviceId=device1&presetId=1 \
+  -H "Content-Type: application/xml" \
+  -d '<ContentItem source="INTERNET_RADIO" type="station" stationId="s24939">
+    <itemName>BBC Radio 1</itemName>
+  </ContentItem>'
+```
+
+### Resolve Stream URL
+```bash
+curl -X POST http://localhost:8090/bmx/resolve \
+  -H "Content-Type: application/xml" \
+  -d '<ContentItem source="INTERNET_RADIO" type="station" stationId="s24939">
+    <itemName>BBC Radio 1</itemName>
+  </ContentItem>'
+```
+
+### Popular TuneIn Station IDs
+- BBC Radio 1: `s24939`
+- BBC Radio 2: `s24940`
+- BBC Radio 4: `s50419`
+- NPR: `s44260`
 
 ## After Bose Shutdown (May 6, 2026)
 
@@ -216,6 +264,7 @@ PORT=8091 npm start
 - **README.md** - Overview
 - **API_REFERENCE.md** - Complete API docs
 - **USAGE.md** - Usage guide
+- **TUNEIN_INTEGRATION.md** - TuneIn/BMX integration guide
 - **IMPLEMENTATION_STATUS.md** - Feature checklist
 - **CONNECTING_REAL_DEVICES.md** - Hardware integration
 - **ARCHITECTURE.md** - System architecture

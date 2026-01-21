@@ -18,6 +18,7 @@ import { NetworkInfoController } from './controllers/networkInfoController.js';
 import { GroupController } from './controllers/groupController.js';
 import { ListMediaServersController } from './controllers/listMediaServersController.js';
 import { CloudReplacementController } from './controllers/cloudReplacementController.js';
+import { BMXController } from './controllers/bmxController.js';
 
 const app = express();
 const PORT = process.env.PORT || 8090;
@@ -45,6 +46,7 @@ const networkInfoController = new NetworkInfoController(deviceManager);
 const groupController = new GroupController(deviceManager);
 const listMediaServersController = new ListMediaServersController(deviceManager);
 const cloudReplacementController = new CloudReplacementController(deviceManager, storage);
+const bmxController = new BMXController(deviceManager, storage);
 
 // ============================================================================
 // CLOUD REPLACEMENT ENDPOINTS (Devices connect TO server)
@@ -69,6 +71,23 @@ app.get('/device/:deviceId/sources', (req, res) => cloudReplacementController.ge
 
 // Account Management
 app.get('/account/:accountId/devices', (req, res) => cloudReplacementController.listDevices(req, res));
+
+// ============================================================================
+// BMX / TUNEIN ENDPOINTS (Internet Radio Integration)
+// These endpoints handle TuneIn integration for web radio presets
+// ============================================================================
+
+// TuneIn Search & Browse
+app.get('/tunein/search', (req, res) => bmxController.searchTuneIn(req, res));
+app.get('/tunein/station/:stationId', (req, res) => bmxController.getTuneInStation(req, res));
+app.get('/tunein/browse', (req, res) => bmxController.browseTuneIn(req, res));
+
+// BMX Stream Resolution (called by devices when playing presets)
+app.post('/bmx/resolve', (req, res) => bmxController.resolveStream(req, res));
+app.get('/bmx/presets/:deviceId', (req, res) => bmxController.getTuneInPresets(req, res));
+
+// TuneIn Authentication (optional)
+app.post('/bmx/auth', (req, res) => bmxController.authenticateTuneIn(req, res));
 
 // ============================================================================
 // CONTROL API ENDPOINTS (Server connects TO devices)

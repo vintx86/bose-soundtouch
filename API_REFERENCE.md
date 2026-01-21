@@ -9,15 +9,18 @@ http://localhost:8090
 
 ## API Overview
 
-This server provides **two sets of APIs**:
+This server provides **three sets of APIs**:
 
 ### 1. Cloud Replacement API (9 endpoints) - PRIMARY
 For devices to connect TO the server (replaces Bose cloud). Devices call these endpoints when configured to use your server.
 
-### 2. Control API (31 endpoints) - SECONDARY/OPTIONAL
+### 2. BMX/TuneIn API (6 endpoints) - ESSENTIAL FOR WEB RADIO
+For TuneIn internet radio integration. Devices call these to resolve web radio presets to stream URLs.
+
+### 3. Control API (31 endpoints) - SECONDARY/OPTIONAL
 For controlling devices from external clients (automation, scripts). These are bonus features for advanced use cases.
 
-**After Bose cloud shutdown (May 2026), only the Cloud Replacement API is essential for device operation.**
+**After Bose cloud shutdown (May 2026), Cloud Replacement API and BMX/TuneIn API are essential for device operation.**
 
 ---
 
@@ -71,6 +74,33 @@ Device uploads its current presets to server for storage.
 ### GET /device/:deviceId/presets
 Device downloads its presets from server.
 
+**Query Parameters:**
+- `presetId` - (Optional) Request specific preset by ID (e.g., `?presetId=1`)
+
+**Response (all presets):**
+```xml
+<presets>
+  <preset id="1" createdOn="..." updatedOn="...">
+    <ContentItem source="INTERNET_RADIO" type="station" location="http://..." stationId="s12345">
+      <itemName>BBC Radio 1</itemName>
+      <stationName>BBC Radio 1</stationName>
+      <containerArt>http://...</containerArt>
+    </ContentItem>
+  </preset>
+</presets>
+```
+
+**Response (specific preset):**
+```xml
+<presets>
+  <preset id="1" createdOn="..." updatedOn="...">
+    <ContentItem source="INTERNET_RADIO" type="station" location="http://..." stationId="s12345">
+      <itemName>BBC Radio 1</itemName>
+    </ContentItem>
+  </preset>
+</presets>
+```
+
 ---
 
 ## Recents Synchronization
@@ -97,6 +127,145 @@ Device downloads source configuration.
 
 ### GET /account/:accountId/devices
 List all devices for an account.
+
+---
+
+# BMX/TuneIn API Endpoints (6) - ESSENTIAL FOR WEB RADIO
+
+These endpoints handle TuneIn internet radio integration. When a device presses a preset button configured with a web radio station, it queries these endpoints to resolve the stream URL.
+
+## TuneIn Search & Browse
+
+### GET /tunein/search
+Search TuneIn for radio stations.
+
+**Query Parameters:**
+- `query` or `q` - Search query (e.g., "BBC", "jazz", "news")
+
+**Response:**
+```xml
+<opml version="1">
+  <body>
+    <outline type="audio" text="BBC Radio 1" URL="http://..." guide_id="s12345" />
+    <outline type="audio" text="BBC Radio 2" URL="http://..." guide_id="s67890" />
+  </body>
+</opml>
+```
+
+### GET /tunein/station/:stationId
+Get station details and stream URL for a specific TuneIn station.
+
+**Parameters:**
+- `stationId` - TuneIn station ID (e.g., "s12345")
+
+**Response:**
+```xml
+<ContentItem source="INTERNET_RADIO" type="station" location="http://stream.url" stationId="s12345">
+  <itemName>BBC Radio 1</itemName>
+  <stationName>BBC Radio 1</stationName>
+</ContentItem>
+```
+
+### GET /tunein/browse
+Browse TuneIn categories.
+
+**Query Parameters:**
+- `c` - Category (e.g., "local", "music", "talk", "sports", "news")
+
+**Response:**
+```xml
+<opml version="1">
+  <body>
+    <outline type="link" text="Local Radio" key="local" />
+    <outline type="link" text="Music" key="music" />
+    <outline type="link" text="Talk" key="talk" />
+  </body>
+</opml>
+```
+
+---
+
+## BMX Stream Resolution
+
+### POST /bmx/resolve
+Resolve a preset to playable content. Called by device when playing any preset.
+
+**Handles all preset types:**
+- **TuneIn stations**: Resolves station ID to actual stream URL
+- **Spotify**: Passes through as-is (Spotify URIs are handled by device)
+- **Direct stream URLs**: Passes through as-is
+- **Other sources**: Passes through as-is
+
+**Request Body (TuneIn):**
+```xml
+<ContentItem source="INTERNET_RADIO" type="station" stationId="s12345">
+  <itemName>BBC Radio 1</itemName>
+  <stationName>BBC Radio 1</stationName>
+</ContentItem>
+```
+
+**Response (TuneIn - resolved):**
+```xml
+<ContentItem source="INTERNET_RADIO" type="station" location="http://actual.stream.url" stationId="s12345">
+  <itemName>BBC Radio 1</itemName>
+  <stationName>BBC Radio 1</stationName>
+  <containerArt>http://...</containerArt>
+</ContentItem>
+```
+
+**Request Body (Spotify):**
+```xml
+<ContentItem source="SPOTIFY" type="playlist" location="spotify:playlist:37i9dQZF1DXcBWIGoYBM5M">
+  <itemName>Today's Top Hits</itemName>
+</ContentItem>
+```
+
+**Response (Spotify - pass through):**
+```xml
+<ContentItem source="SPOTIFY" type="playlist" location="spotify:playlist:37i9dQZF1DXcBWIGoYBM5M">
+  <itemName>Today's Top Hits</itemName>
+</ContentItem>
+```
+
+### GET /bmx/presets/:deviceId
+Get TuneIn/Internet Radio presets for a device.
+
+**Response:**
+```xml
+<presets>
+  <preset id="1">
+    <ContentItem source="INTERNET_RADIO" type="station" location="http://..." stationId="s12345">
+      <itemName>BBC Radio 1</itemName>
+    </ContentItem>
+  </preset>
+</presets>
+```
+
+---
+
+## TuneIn Authentication
+
+### POST /bmx/auth
+Authenticate with TuneIn (optional, for premium features).
+
+**Request Body:**
+```xml
+<auth>
+  <username>your_username</username>
+  <password>your_password</password>
+</auth>
+```
+
+**Response:**
+```xml
+<status>OK</status>
+```
+
+**Note:** You can also set credentials via environment variables:
+```bash
+export TUNEIN_USERNAME="your_username"
+export TUNEIN_PASSWORD="your_password"
+```
 
 ---
 

@@ -16,21 +16,29 @@ A complete Node.js implementation that **replaces Bose cloud services** for Soun
 - Source configuration
 - Account-based device organization
 
+**BMX/TuneIn Integration API (6 endpoints):**
+- TuneIn search and browse
+- Station lookup and stream resolution
+- Preset button support with automatic URL resolution
+- Optional TuneIn authentication
+
 **Bonus Control API (31 endpoints):**
 - Direct device control for automation
 - Integration with home automation systems
 - Custom scripting and control interfaces
 
-**Total: 40 endpoints + WebSocket support**
+**Total: 46 endpoints + WebSocket support**
 
 ### Priority Features (As Requested)
 
 #### 1. ✅ Web Radio Configuration on Presets
 - Full preset management (6 presets)
-- Internet radio station support
+- Internet radio station support with TuneIn integration
 - Custom stream URL configuration
 - Default presets included (BBC Radio, Jazz Radio, Classical Radio)
 - Store and recall radio stations
+- Automatic stream URL resolution via BMX server
+- TuneIn search and browse functionality
 
 #### 2. ✅ Spotify Integration
 - Complete Spotify source support
@@ -62,7 +70,7 @@ bose-soundtouch-server/
 │   │   ├── presetController.js        # Preset management
 │   │   ├── presetStorageController.js # Preset storage
 │   │   ├── cloudReplacementController.js # Cloud replacement endpoints (NEW!)
-│   │   ├── zoneController.js          # Multiroom zones
+│   │   ├── bmxController.js           # TuneIn/BMX integration (NEW!)
 │   │   ├── zoneController.js          # Multiroom zones
 │   │   ├── playbackController.js      # Play/pause/stop
 │   │   ├── volumeController.js        # Volume control
@@ -155,7 +163,19 @@ bose-soundtouch-server/
 
 **Cloud Replacement Total: 9 endpoints**
 
-**Grand Total: 40 endpoints + WebSocket**
+### BMX/TuneIn Endpoints (6) - NEW!
+
+#### TuneIn Integration
+- `GET /tunein/search` - Search TuneIn stations
+- `GET /tunein/station/:stationId` - Get station details
+- `GET /tunein/browse` - Browse TuneIn categories
+- `POST /bmx/resolve` - Resolve preset to stream URL
+- `GET /bmx/presets/:deviceId` - Get TuneIn presets
+- `POST /bmx/auth` - TuneIn authentication
+
+**BMX/TuneIn Total: 6 endpoints**
+
+**Grand Total: 46 endpoints + WebSocket**
 
 ## Key Features
 
@@ -278,6 +298,7 @@ The server is designed to be extended for real hardware. See `CONNECTING_REAL_DE
 - **README.md** - Overview and quick start
 - **API_REFERENCE.md** - Complete endpoint documentation
 - **USAGE.md** - Detailed usage guide with examples
+- **TUNEIN_INTEGRATION.md** - TuneIn/BMX integration guide (NEW!)
 - **IMPLEMENTATION_STATUS.md** - Feature checklist and coverage
 - **CONNECTING_REAL_DEVICES.md** - Hardware integration guide
 - **examples/** - XML request examples
