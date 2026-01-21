@@ -1,14 +1,25 @@
 {
   "name": "bose-soundtouch-server",
   "version": "1.0.0",
-  "description": "Local server implementing Bose SoundTouch Web API",
+  "description": "Local server implementing Bose SoundTouch Web API with cloud replacement, TuneIn integration, and Web UI",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "./test-api.sh"
   },
-  "keywords": ["bose", "soundtouch", "api", "server"],
+  "keywords": [
+    "bose",
+    "soundtouch",
+    "api",
+    "server",
+    "tunein",
+    "spotify",
+    "multiroom",
+    "cloud-replacement",
+    "web-ui"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

@@ -13,9 +13,27 @@ npm install
 # Start server
 npm start
 
+# Access Web UI
+# Open browser: http://localhost:8090
+
 # Configure devices (see DEVICE_CONFIGURATION_GUIDE.md)
 ./scripts/configure-device-for-server.sh <device_ip> <server_url>
 ```
+
+## Web UI
+
+**Quick Access:** `http://localhost:8090`
+
+**Features:**
+- 📱 Device management
+- 🎵 Preset configuration (TuneIn, Spotify, Direct URLs)
+- ▶️ Playback control
+- 🔊 Volume, bass, balance adjustment
+- 🔗 Multiroom zones
+- 🔍 TuneIn search
+- ⚙️ Settings
+
+**Documentation:** [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) | [WEB_UI_QUICKSTART.md](WEB_UI_QUICKSTART.md)
 
 ## Configuration
 

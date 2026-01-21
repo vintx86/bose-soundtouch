@@ -23,6 +23,9 @@ import { BMXController } from './controllers/bmxController.js';
 const app = express();
 const PORT = process.env.PORT || 8090;
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 app.use(express.text({ type: 'application/xml' }));
 app.use(express.json());
 

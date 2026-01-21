@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Script to configure web radio presets on a Bose SoundTouch device
+# Supports both direct stream URLs and TuneIn station IDs
 # Usage: ./configure-webradio-presets.sh [deviceId]
 
 BASE_URL="http://localhost:8090"
@@ -11,14 +12,18 @@ echo "Configuring Web Radio Presets"
 echo "Device: $DEVICE_ID"
 echo "========================================="
 echo ""
+echo "Note: You can also use the Web UI at http://localhost:8090"
+echo "      to configure presets with TuneIn search integration"
+echo ""
 
-# Preset 1: BBC Radio 1
-echo "Setting Preset 1: BBC Radio 1"
+# Preset 1: BBC Radio 1 (TuneIn Station ID)
+echo "Setting Preset 1: BBC Radio 1 (TuneIn)"
 curl -s -X POST "$BASE_URL/storePreset?deviceId=$DEVICE_ID&presetId=1" \
   -H "Content-Type: application/xml" \
   -d '<?xml version="1.0" encoding="UTF-8"?>
-<ContentItem source="INTERNET_RADIO" type="station" location="http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one">
+<ContentItem source="INTERNET_RADIO" type="station" stationId="s24939">
   <itemName>BBC Radio 1</itemName>
+  <stationName>BBC Radio 1</stationName>
   <containerArt>https://cdn-profiles.tunein.com/s24939/images/logog.png</containerArt>
 </ContentItem>'
 echo " ✓"
@@ -96,4 +101,11 @@ echo ""
 
 echo "Test a preset with:"
 echo "  curl -X POST '$BASE_URL/key?deviceId=$DEVICE_ID' -H 'Content-Type: application/xml' -d '<key>PRESET_1</key>'"
+echo ""
+echo "Or use the Web UI:"
+echo "  http://localhost:8090"
+echo ""
+echo "For TuneIn integration, see:"
+echo "  - TUNEIN_INTEGRATION.md"
+echo "  - PRESET_TYPES_GUIDE.md"
 echo ""

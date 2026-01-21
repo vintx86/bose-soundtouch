@@ -72,6 +72,43 @@ These endpoints allow Bose devices to connect TO our server (replacing Bose clou
 
 **Storage:** All device data persisted to filesystem at `data/accounts/{accountId}/devices/{deviceId}/`
 
+## 🎵 BMX/TuneIn Endpoints (Internet Radio Integration)
+
+These endpoints handle TuneIn integration for web radio presets:
+
+- ✅ `GET /tunein/search` - Search TuneIn stations
+- ✅ `GET /tunein/station/:stationId` - Get station details and stream URL
+- ✅ `GET /tunein/browse` - Browse TuneIn categories
+- ✅ `POST /bmx/resolve` - Resolve preset to stream URL (handles all preset types)
+- ✅ `GET /bmx/presets/:deviceId` - Get TuneIn presets for device
+- ✅ `POST /bmx/auth` - Authenticate with TuneIn (optional)
+
+**Features:**
+- TuneIn station search and browse
+- Automatic stream URL resolution for TuneIn station IDs
+- Pass-through for Spotify and direct URLs
+- Optional TuneIn authentication for premium features
+
+## 🌐 Web UI (Browser Interface)
+
+Complete web-based management interface:
+
+- ✅ Device management and monitoring
+- ✅ Preset configuration (TuneIn, Spotify, Direct URLs)
+- ✅ Playback control with now playing display
+- ✅ Volume, bass, and balance adjustment
+- ✅ Multiroom zone creation and management
+- ✅ TuneIn search and browse
+- ✅ Settings and authentication
+- ✅ Responsive design (desktop, tablet, mobile)
+
+**Access:** `http://localhost:8090`
+
+**Files:**
+- `public/index.html` - Main UI structure
+- `public/styles.css` - Styling
+- `public/app.js` - Frontend logic
+
 ## 🎯 Priority Features (Requested)
 
 ### 1. Web Radio Configuration on Presets ✅
@@ -224,16 +261,20 @@ ws.on('message', (data) => {
 | Media Servers | 1/1 | ✅ 100% |
 | WebSocket | 1/1 | ✅ 100% |
 | Cloud Replacement | 9/9 | ✅ 100% |
-| **TOTAL API** | **40/40** | **✅ 100%** |
+| BMX/TuneIn | 6/6 | ✅ 100% |
+| Web UI | 1/1 | ✅ 100% |
+| **TOTAL** | **47/47** | **✅ 100%** |
 
 ## 🎯 Priority Features Status
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Web Radio Presets | ✅ Complete | 6 presets, persistent storage, preset buttons |
-| Spotify Integration | ✅ Complete | All URI types, presets, metadata |
+| Web Radio Presets | ✅ Complete | 6 presets, persistent storage, preset buttons, TuneIn integration |
+| Spotify Integration | ✅ Complete | All URI types, presets, metadata, BMX pass-through |
 | Multiroom (Zones) | ✅ Complete | Full zone management, dynamic members |
 | Cloud Replacement | ✅ Complete | Device registration, preset sync, soundcork-compatible |
+| TuneIn/BMX Integration | ✅ Complete | Search, browse, stream resolution, authentication |
+| Web UI | ✅ Complete | Full browser interface, all features, responsive design |
 
 ## 🚀 Ready for Production
 

@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Client Applications                      │
-│  (Home Assistant, Mobile Apps, Web Interfaces, curl, etc.)     │
+│  (Web UI, Home Assistant, Mobile Apps, curl, etc.)             │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                              │ HTTP/WebSocket
@@ -17,6 +17,8 @@
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │                    Express Server                        │   │
 │  │                  (src/server.js)                        │   │
+│  │  • Static file serving (Web UI)                        │   │
+│  │  • API routing                                          │   │
 │  └──────────────────────┬──────────────────────────────────┘   │
 │                         │                                        │
 │  ┌──────────────────────┴──────────────────────────────────┐   │
@@ -25,6 +27,14 @@
 │  │  • Device state management                              │   │
 │  │  • Zone management                                      │   │
 │  │  • Event emission                                       │   │
+│  └──────────────────────┬──────────────────────────────────┘   │
+│                         │                                        │
+│  ┌──────────────────────┴──────────────────────────────────┐   │
+│  │              File Storage                                │   │
+│  │           (src/storage/fileStorage.js)                  │   │
+│  │  • Persistent device data                               │   │
+│  │  • Preset storage                                       │   │
+│  │  • Account-based organization                           │   │
 │  └──────────────────────┬──────────────────────────────────┘   │
 │                         │                                        │
 │  ┌──────────────────────┴──────────────────────────────────┐   │
@@ -38,7 +48,8 @@
 │  │  │ Controller │  │ Controller │  │ Controller │       │   │
 │  │  └────────────┘  └────────────┘  └────────────┘       │   │
 │  │  ┌────────────┐  ┌────────────┐  ┌────────────┐       │   │
-│  │  │  Recents   │  │   Source   │  │    Name    │       │   │
+│  │  │   Cloud    │  │    BMX     │  │   Preset   │       │   │
+│  │  │Replacement │  │  TuneIn    │  │  Storage   │       │   │
 │  │  │ Controller │  │ Controller │  │ Controller │       │   │
 │  │  └────────────┘  └────────────┘  └────────────┘       │   │
 │  └──────────────────────┬──────────────────────────────────┘   │
@@ -58,6 +69,16 @@
 │  │  • Real-time notifications                              │   │
 │  │  • Zone updates                                         │   │
 │  │  • Playback changes                                     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Web UI                                 │   │
+│  │              (public/*.html/css/js)                     │   │
+│  │  • Device management                                    │   │
+│  │  • Preset configuration                                 │   │
+│  │  • Playback control                                     │   │
+│  │  • Zone management                                      │   │
+│  │  • TuneIn search                                        │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
                              │
@@ -197,6 +218,7 @@ Client                Server              DeviceManager        Zone State
 ### Controllers
 Each controller handles a specific API domain:
 - **PresetController**: Preset CRUD, content selection
+- **PresetStorageController**: Persistent preset storage
 - **ZoneController**: Multiroom zone management
 - **PlaybackController**: Play/pause/stop, now playing
 - **VolumeController**: Volume get/set
@@ -210,6 +232,8 @@ Each controller handles a specific API domain:
 - **NetworkInfoController**: Network details
 - **GroupController**: Group management
 - **ListMediaServersController**: Media server listing
+- **CloudReplacementController**: Device registration, preset/recents/sources sync
+- **BMXController**: TuneIn search, browse, stream resolution
 
 ### Device Model (src/models/device.js)
 - Device state storage

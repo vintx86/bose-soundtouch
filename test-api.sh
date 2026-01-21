@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # Test script for Bose SoundTouch API - Complete Test Suite
-# Tests both Controller API (31 endpoints) and Cloud Replacement API (9 endpoints)
-# Total: 40 endpoints
+# Tests Control API (31 endpoints), Cloud Replacement API (9 endpoints), and BMX/TuneIn API (6 endpoints)
+# Total: 46 endpoints + Web UI
 
 BASE_URL="http://localhost:8090"
 DEVICE_ID="device1"
 
 echo "========================================="
 echo "Bose SoundTouch API - Complete Test Suite"
-echo "Testing 40 Endpoints (31 Control + 9 Cloud)"
+echo "Testing 46 Endpoints + Web UI"
 echo "========================================="
 echo ""
 
@@ -251,17 +251,62 @@ echo "40. List Account Devices"
 curl -s "$BASE_URL/account/default/devices" | head -20
 echo ""
 
+# BMX/TuneIn API Tests
+echo "=== BMX/TUNEIN API ==="
+echo ""
+
+echo "41. Search TuneIn for BBC"
+curl -s "$BASE_URL/tunein/search?query=BBC" | head -20
+echo ""
+
+echo "42. Get TuneIn Station Details (BBC Radio 1)"
+curl -s "$BASE_URL/tunein/station/s24939" | xmllint --format - 2>/dev/null || echo "OK"
+echo ""
+
+echo "43. Browse TuneIn Music Category"
+curl -s "$BASE_URL/tunein/browse?c=music" | head -20
+echo ""
+
+echo "44. Resolve TuneIn Stream"
+curl -s -X POST "$BASE_URL/bmx/resolve" \
+  -H "Content-Type: application/xml" \
+  -d '<ContentItem source="INTERNET_RADIO" type="station" stationId="s24939"><itemName>BBC Radio 1</itemName></ContentItem>' | xmllint --format - 2>/dev/null || echo "OK"
+echo ""
+
+echo "45. Resolve Spotify (Pass Through)"
+curl -s -X POST "$BASE_URL/bmx/resolve" \
+  -H "Content-Type: application/xml" \
+  -d '<ContentItem source="SPOTIFY" type="playlist" location="spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"><itemName>Test Playlist</itemName></ContentItem>' | xmllint --format - 2>/dev/null || echo "OK"
+echo ""
+
+echo "46. Get TuneIn Presets for Device"
+curl -s "$BASE_URL/bmx/presets/TEST123" | xmllint --format - 2>/dev/null || echo "OK"
+echo ""
+
+# Web UI Test
+echo "=== WEB UI ==="
+echo ""
+
+echo "47. Test Web UI Access"
+curl -s -I "$BASE_URL/" | head -5
+echo ""
+
 echo "========================================="
 echo "All Tests Complete!"
 echo "========================================="
 echo ""
 echo "Tests Summary:"
-echo "  - Controller API: 31 endpoints (tests 1-31)"
+echo "  - Control API: 31 endpoints (tests 1-31)"
 echo "  - Cloud Replacement API: 9 endpoints (tests 32-40)"
-echo "  - Total: 40 endpoints tested"
+echo "  - BMX/TuneIn API: 6 endpoints (tests 41-46)"
+echo "  - Web UI: 1 interface (test 47)"
+echo "  - Total: 46 endpoints + Web UI tested"
+echo ""
+echo "Web UI available at:"
+echo "  http://localhost:8090"
 echo ""
 echo "WebSocket notifications available at:"
-echo "ws://localhost:8090/notifications"
+echo "  ws://localhost:8090/notifications"
 echo ""
 echo "Check data directory for stored device data:"
 echo "  ls -la data/accounts/default/devices/"

@@ -2,6 +2,34 @@
 
 ## Quick Start
 
+### Option 1: Web UI (Recommended)
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the server:
+```bash
+npm start
+```
+
+3. Open your browser:
+```
+http://localhost:8090
+```
+
+4. Use the web interface to:
+   - Manage devices
+   - Configure presets (TuneIn, Spotify, Direct URLs)
+   - Control playback
+   - Create multiroom zones
+   - Search TuneIn stations
+
+See [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) for complete Web UI documentation.
+
+### Option 2: Command Line / API
+
 1. Install dependencies:
 ```bash
 npm install

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bose SoundTouch Server</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔊 Bose SoundTouch Server</h1>
+            <p class="subtitle">Local Cloud Replacement & Device Management</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="devices">Devices</button>
+            <button class="tab-btn" data-tab="presets">Presets</button>
+            <button class="tab-btn" data-tab="playback">Playback</button>
+            <button class="tab-btn" data-tab="zones">Zones</button>
+            <button class="tab-btn" data-tab="tunein">TuneIn</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
+        </div>
+
+        <!-- Devices Tab -->
+        <div id="devices-tab" class="tab-content active">
+            <div class="section">
+                <h2>Registered Devices</h2>
+                <div id="devices-list" class="devices-grid"></div>
+                <button class="btn btn-primary" onclick="refreshDevices()">🔄 Refresh Devices</button>
+            </div>
+
+            <div class="section">
+                <h2>Add Device</h2>
+                <form id="add-device-form" class="form">
+                    <input type="text" id="device-id" placeholder="Device ID" required>
+                    <input type="text" id="device-name" placeholder="Device Name" required>
+                    <input type="text" id="device-host" placeholder="IP Address (e.g., 192.168.1.100)" required>
+                    <input type="number" id="device-port" placeholder="Port (default: 8090)" value="8090">
+                    <button type="submit" class="btn btn-primary">➕ Add Device</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Presets Tab -->
+        <div id="presets-tab" class="tab-content">
+            <div class="section">
+                <h2>Manage Presets</h2>
+                <div class="form-group">
+                    <label>Select Device:</label>
+                    <select id="preset-device-select" onchange="loadPresets()"></select>
+                </div>
+                <div id="presets-list" class="presets-grid"></div>
+            </div>
+
+            <div class="section">
+                <h2>Add/Edit Preset</h2>
+                <form id="preset-form" class="form">
+                    <div class="form-group">
+                        <label>Preset Slot (1-6):</label>
+                        <select id="preset-slot" required>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Source Type:</label>
+                        <select id="preset-source" onchange="updatePresetForm()" required>
+                            <option value="INTERNET_RADIO">Internet Radio (TuneIn)</option>
+                            <option value="INTERNET_RADIO_DIRECT">Internet Radio (Direct URL)</option>
+                            <option value="SPOTIFY">Spotify</option>
+                        </select>
+                    </div>
+                    <div id="preset-tunein-fields" class="preset-fields">
+                        <input type="text" id="preset-station-id" placeholder="TuneIn Station ID (e.g., s24939)">
+                        <button type="button" class="btn btn-secondary" onclick="searchTuneIn()">🔍 Search TuneIn</button>
+                    </div>
+                    <div id="preset-direct-fields" class="preset-fields" style="display:none;">
+                        <input type="text" id="preset-stream-url" placeholder="Stream URL (http://...)">
+                    </div>
+                    <div id="preset-spotify-fields" class="preset-fields" style="display:none;">
+                        <input type="text" id="preset-spotify-uri" placeholder="Spotify URI (spotify:playlist:...)">
+                        <small>Format: spotify:playlist:ID, spotify:album:ID, spotify:track:ID, or spotify:artist:ID</small>
+                    </div>
+                    <input type="text" id="preset-name" placeholder="Preset Name" required>
+                    <input type="text" id="preset-art" placeholder="Cover Art URL (optional)">
+                    <button type="submit" class="btn btn-primary">💾 Save Preset</button>
+                </form>
+            </div>
+
+            <div id="tunein-search-results" class="section" style="display:none;">
+                <h3>TuneIn Search Results</h3>
+                <div id="search-results"></div>
+            </div>
+        </div>
+
+        <!-- Playback Tab -->
+        <div id="playback-tab" class="tab-content">
+            <div class="section">
+                <h2>Playback Control</h2>
+                <div class="form-group">
+                    <label>Select Device:</label>
+                    <select id="playback-device-select" onchange="loadNowPlaying()"></select>
+                </div>
+                
+                <div id="now-playing" class="now-playing-card">
+                    <div class="now-playing-art">
+                        <img id="np-art" src="" alt="Album Art" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2220%22%3ENo Art%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="now-playing-info">
+                        <h3 id="np-track">Not Playing</h3>
+                        <p id="np-artist"></p>
+                        <p id="np-album"></p>
+                        <p id="np-source" class="source-badge"></p>
+                    </div>
+                </div>
+
+                <div class="playback-controls">
+                    <button class="btn btn-control" onclick="sendKey('PREV_TRACK')">⏮️</button>
+                    <button class="btn btn-control" onclick="sendKey('PLAY')">▶️</button>
+                    <button class="btn btn-control" onclick="sendKey('PAUSE')">⏸️</button>
+                    <button class="btn btn-control" onclick="sendKey('STOP')">⏹️</button>
+                    <button class="btn btn-control" onclick="sendKey('NEXT_TRACK')">⏭️</button>
+                </div>
+
+                <div class="volume-control">
+                    <label>Volume: <span id="volume-value">50</span></label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolume()">
+                    <button class="btn btn-secondary" onclick="sendKey('MUTE')">🔇 Mute</button>
+                </div>
+
+                <div class="audio-controls">
+                    <div class="form-group">
+                        <label>Bass: <span id="bass-value">0</span></label>
+                        <input type="range" id="bass-slider" min="-9" max="0" value="0" oninput="updateBass()">
+                    </div>
+                    <div class="form-group">
+                        <label>Balance: <span id="balance-value">0</span></label>
+                        <input type="range" id="balance-slider" min="-10" max="10" value="0" oninput="updateBalance()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Quick Actions</h2>
+                <div class="quick-actions">
+                    <button class="btn btn-secondary" onclick="loadPresetButtons()">Load Presets</button>
+                    <div id="preset-buttons" class="preset-buttons"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zones Tab -->
+        <div id="zones-tab" class="tab-content">
+            <div class="section">
+                <h2>Multiroom Zones</h2>
+                <div id="zones-list"></div>
+            </div>
+
+            <div class="section">
+                <h2>Create Zone</h2>
+                <form id="zone-form" class="form">
+                    <div class="form-group">
+                        <label>Master Device:</label>
+                        <select id="zone-master" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Slave Devices:</label>
+                        <div id="zone-slaves" class="checkbox-group"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">🔗 Create Zone</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TuneIn Tab -->
+        <div id="tunein-tab" class="tab-content">
+            <div class="section">
+                <h2>TuneIn Search</h2>
+                <div class="form">
+                    <input type="text" id="tunein-search-input" placeholder="Search for stations...">
+                    <button class="btn btn-primary" onclick="searchTuneInTab()">🔍 Search</button>
+                </div>
+                <div id="tunein-results" class="tunein-results"></div>
+            </div>
+
+            <div class="section">
+                <h2>Browse Categories</h2>
+                <div class="category-grid">
+                    <button class="btn btn-category" onclick="browseTuneIn('local')">📍 Local Radio</button>
+                    <button class="btn btn-category" onclick="browseTuneIn('music')">🎵 Music</button>
+                    <button class="btn btn-category" onclick="browseTuneIn('talk')">💬 Talk</button>
+                    <button class="btn btn-category" onclick="browseTuneIn('sports')">⚽ Sports</button>
+                    <button class="btn btn-category" onclick="browseTuneIn('news')">📰 News</button>
+                    <button class="btn btn-category" onclick="browseTuneIn('world')">🌍 World</button>
+                </div>
+                <div id="tunein-browse-results" class="tunein-results"></div>
+            </div>
+
+            <div class="section">
+                <h2>Popular Stations</h2>
+                <div class="popular-stations">
+                    <div class="station-card" onclick="useStation('s24939', 'BBC Radio 1')">
+                        <h4>BBC Radio 1</h4>
+                        <p>ID: s24939</p>
+                    </div>
+                    <div class="station-card" onclick="useStation('s24940', 'BBC Radio 2')">
+                        <h4>BBC Radio 2</h4>
+                        <p>ID: s24940</p>
+                    </div>
+                    <div class="station-card" onclick="useStation('s50419', 'BBC Radio 4')">
+                        <h4>BBC Radio 4</h4>
+                        <p>ID: s50419</p>
+                    </div>
+                    <div class="station-card" onclick="useStation('s44260', 'NPR')">
+                        <h4>NPR</h4>
+                        <p>ID: s44260</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <div class="section">
+                <h2>Server Settings</h2>
+                <div class="form">
+                    <div class="form-group">
+                        <label>Server URL:</label>
+                        <input type="text" id="server-url" value="http://localhost:8090">
+                    </div>
+                    <div class="form-group">
+                        <label>Account ID:</label>
+                        <input type="text" id="account-id" value="default">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>TuneIn Authentication</h2>
+                <div class="form">
+                    <input type="text" id="tunein-username" placeholder="TuneIn Username (optional)">
+                    <input type="password" id="tunein-password" placeholder="TuneIn Password (optional)">
+                    <button class="btn btn-secondary" onclick="authenticateTuneIn()">🔐 Authenticate</button>
+                    <small>Optional: Required for premium TuneIn features</small>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>About</h2>
+                <div class="info-box">
+                    <p><strong>Bose SoundTouch Local Server</strong></p>
+                    <p>Cloud replacement for SoundTouch devices after May 6, 2026 shutdown</p>
+                    <p>Features: Web Radio (TuneIn), Spotify, Multiroom Zones</p>
+                    <p>Total Endpoints: 46 (9 Cloud + 6 TuneIn + 31 Control)</p>
+                    <p>(c) 2026 Benjamin Schaja</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

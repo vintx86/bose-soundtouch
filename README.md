@@ -67,7 +67,22 @@ npm start
 
 Server runs on port 8090 by default.
 
-### 2. Configure Your Devices
+### 2. Access Web UI
+
+Open your browser and navigate to:
+```
+http://localhost:8090
+```
+
+The web UI provides a complete interface for:
+- Device management
+- Preset configuration (TuneIn, Spotify, Direct URLs)
+- Playback control
+- Multiroom zone management
+- TuneIn search and browse
+- Settings and authentication
+
+### 3. Configure Your Devices
 
 Follow the [Device Configuration Guide](DEVICE_CONFIGURATION_GUIDE.md) to configure your SoundTouch devices to use your server instead of Bose cloud.
 
@@ -236,7 +251,30 @@ src/
 │   └── ...
 └── utils/
     └── presetInitializer.js          # Default presets
+
+public/                                # Web UI (NEW!)
+├── index.html                         # Main UI
+├── styles.css                         # Styling
+└── app.js                             # Frontend logic
 ```
+
+## Web UI
+
+A complete web-based management interface is included:
+
+**Features:**
+- 📱 Device management and monitoring
+- 🎵 Preset configuration (TuneIn, Spotify, Direct URLs)
+- ▶️ Playback control with now playing display
+- 🔊 Volume, bass, and balance adjustment
+- 🔗 Multiroom zone creation and management
+- 🔍 TuneIn search and browse
+- ⚙️ Settings and authentication
+- 📱 Responsive design (works on desktop, tablet, mobile)
+
+**Access:** Open `http://localhost:8090` in your browser
+
+**Documentation:** See [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) for complete usage guide
 
 ## WebSocket Events
 
@@ -263,3 +301,6 @@ Event types: `zoneUpdated`, `deviceRegistered`, `presetsUpdated`, etc.
 ## License
 
 MIT
+
+## Autor
+(C) 2026 Benjamin Schaja
