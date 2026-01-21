@@ -1,0 +1,17 @@
+services:
+  bose-soundtouch:
+    container_name: bose-soundtouch
+    image: bose-soundtouch:latest
+    restart: unless-stopped
+    network_mode: host # Change Network if required
+    ports:
+      - 8090:8090 # Change Port if Required
+    volumes:
+      - ./scripts:/app/scripts # Update Mount or Bind if required
+      - ./config:/app/config # Update Mount or Bind if required
+      - ./data:/app/data # Update Mount or Bind if required
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - NODE_ENV=production # Preferred over development/test - https://nodejs.org/en/learn/getting-started/nodejs-the-difference-between-development-and-production#nodejs-the-difference-between-development-and-production
